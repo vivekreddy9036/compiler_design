@@ -1,0 +1,97 @@
+.editor-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.editor-header {
+  padding: 0 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.editor-header h3 {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-wrapper {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+
+.line-numbers {
+  padding: 10px 0;
+  background: var(--bg-2);
+  border-right: 1px solid var(--border);
+  text-align: right;
+  user-select: none;
+  overflow: hidden;
+  min-width: 50px;
+  padding-right: 8px;
+  padding-left: 6px;
+  flex-shrink: 0;
+}
+
+.line-number {
+  font-size: 12px;
+  line-height: 21px;
+  height: 21px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.code-textarea {
+  flex: 1;
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--text-0);
+  border: none;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 21px;
+  outline: none;
+  overflow: auto;
+  white-space: pre;
+  word-wrap: normal;
+  caret-color: var(--cyan);
+  tab-size: 4;
+}
+
+.code-textarea::selection {
+  background: rgba(0, 212, 255, 0.18);
+}
+
+.code-textarea::placeholder {
+  color: var(--text-3);
+}
+
+.code-textarea:focus {
+  background: rgba(0, 212, 255, 0.02);
+}
+
+.code-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .editor-panel {
+    flex: 0 0 200px;
+  }
+}

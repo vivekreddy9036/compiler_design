@@ -1,0 +1,131 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 100;
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-light), transparent);
+  opacity: 0.3;
+}
+
+.topbar-left,
+.topbar-center,
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-left {
+  flex: 1;
+  gap: 12px;
+}
+
+.topbar-center {
+  gap: 4px;
+}
+
+.topbar-right {
+  gap: 4px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-1);
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  display: none;
+}
+
+.menu-btn:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+@media (max-width: 768px) {
+  .menu-btn {
+    display: flex;
+  }
+  
+  .topbar-center {
+    display: none;
+  }
+}
+
+.logo {
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-weight: 800;
+  font-size: 16px;
+  background: linear-gradient(120deg, var(--cyan) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.logo-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-2);
+  letter-spacing: 0.05em;
+}
+
+.filename-input {
+  padding: 6px 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: all 0.15s;
+  width: 120px;
+}
+
+.filename-input:focus {
+  border-color: var(--cyan);
+  color: var(--text-0);
+  background: var(--bg-2);
+}
+
+.mode-select {
+  padding: 6px 10px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.mode-select:focus {
+  border-color: var(--cyan);
+  background: var(--bg-2);
+}

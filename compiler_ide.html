@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyCompiler Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── DESIGN TOKENS ──────────────────────────────────── */
+:root {
+  --bg0:#080b10; --bg1:#0d1117; --bg2:#111823; --bg3:#182030;
+  --bg4:#1f2a3c; --bg5:#263347;
+  --border:#1e2d42; --border2:#2a3f5a; --border3:#3a5270;
+  --cyan:#00d4ff; --cyan2:#00afd4; --cyan3:rgba(0,212,255,.12);
+  --green:#00ff9d; --green2:#00cc7a; --green3:rgba(0,255,157,.1);
+  --red:#ff4d6a; --red2:#cc3352; --red3:rgba(255,77,106,.12);
+  --amber:#ffb700; --amber3:rgba(255,183,0,.12);
+  --violet:#a78bfa; --violet3:rgba(167,139,250,.1);
+  --text0:#e8f1ff; --text1:#a8b8d0; --text2:#5a7090; --text3:#2a3f58;
+  --mono:'IBM Plex Mono',monospace;
+  --ui:'Outfit',sans-serif;
+  --r:6px; --r2:10px;
+  --glow-cyan:0 0 24px rgba(0,212,255,.2);
+  --glow-green:0 0 20px rgba(0,255,157,.2);
+  --glow-red:0 0 20px rgba(255,77,106,.25);
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+[data-theme="light"] {
+  --bg0:#f4f7fc; --bg1:#edf1f9; --bg2:#e4eaf5; --bg3:#d8e2f0;
+  --bg4:#ccd8eb; --bg5:#bfcde5;
+  --border:#c8d5e8; --border2:#9fb5d0; --border3:#7898ba;
+  --cyan:#0077aa; --cyan2:#005f88; --cyan3:rgba(0,119,170,.1);
+  --green:#007a4a; --green2:#005c38; --green3:rgba(0,122,74,.08);
+  --red:#c0183a; --red2:#95102c; --red3:rgba(192,24,58,.08);
+  --amber:#8a5c00; --amber3:rgba(138,92,0,.08);
+  --violet:#5b35c0; --violet3:rgba(91,53,192,.08);
+  --text0:#0a1628; --text1:#2a3d58; --text2:#5a728a; --text3:#8aa0ba;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--text0);font-family:var(--mono)}
+
+/* ─── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border3)}
+
+/* ─── LAYOUT ─────────────────────────────────────────── */
+#shell{display:flex;flex-direction:column;height:100vh}
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+#topbar{
+  display:flex;align-items:center;gap:10px;
+  padding:0 18px;height:50px;
+  background:var(--bg1);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  position:relative;
+  z-index:200;
+}
+#topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan2),transparent);
+  opacity:.4;
+}
+.logo{
+  font-family:var(--ui);font-weight:800;font-size:16px;
+  letter-spacing:-.5px;
+  background:linear-gradient(120deg,var(--cyan) 0%,var(--violet) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  white-space:nowrap;user-select:none;
+}
+.logo-sub{font-family:var(--ui);font-size:10px;font-weight:400;-webkit-text-fill-color:var(--text2);margin-left:2px;letter-spacing:.05em;}
+.vsep{width:1px;height:22px;background:var(--border2);flex-shrink:0}
+.fn-input{
+  font-family:var(--mono);font-size:11px;
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text1);padding:4px 10px;border-radius:var(--r);
+  width:130px;outline:none;transition:border .15s var(--ease);
+}
+.fn-input:focus{border-color:var(--cyan);color:var(--text0)}
+.spacer{flex:1}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:5px 13px;border-radius:var(--r);
+  font-family:var(--mono);font-size:11px;font-weight:500;
+  cursor:pointer;border:1px solid transparent;
+  transition:all .15s var(--ease);white-space:nowrap;outline:none;
+  position:relative;overflow:hidden;
+}
+.btn::after{
+  content:'';position:absolute;inset:0;opacity:0;
+  background:linear-gradient(120deg,rgba(255,255,255,.08),transparent);
+  transition:opacity .15s;
+}
+.btn:hover::after{opacity:1}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--text1)}
+.btn-ghost:hover{border-color:var(--border3);color:var(--text0);background:var(--bg4)}
+.btn-compile{
+  background:linear-gradient(135deg,var(--violet) 0%,#7c6be8 100%);
+  color:#fff;border-color:var(--violet);font-weight:600;
+}
+.btn-compile:hover{box-shadow:0 0 18px rgba(167,139,250,.4)}
+.btn-run{
+  background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan2) 100%);
+  color:var(--bg0);border-color:var(--cyan);font-weight:700;
+}
+.btn-run:hover{box-shadow:var(--glow-cyan)}
+.btn-danger{background:transparent;border-color:var(--red2);color:var(--red)}
+.btn-danger:hover{background:var(--red3)}
+.kbd{
+  display:inline-block;background:var(--bg4);border:1px solid var(--border3);
+  border-radius:3px;padding:0 5px;font-size:9px;color:var(--text2);vertical-align:middle;
+}
+
+/* Theme toggle */
+#themeBtn{
+  background:var(--bg4);border:1px solid var(--border2);
+  border-radius:var(--r);padding:5px 8px;cursor:pointer;
+  color:var(--text1);font-size:13px;transition:all .15s;
+}
+#themeBtn:hover{background:var(--bg5);color:var(--text0)}
+
+/* ─── WORKSPACE ──────────────────────────────────────── */
+#workspace{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* ─── PANEL BASE ─────────────────────────────────────── */
+.panel{display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.pane-hdr{
+  display:flex;align-items:center;gap:7px;
+  padding:0 12px;height:36px;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.pane-title{
+  font-family:var(--ui);font-size:10px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--text2);
+}
+.pane-actions{margin-left:auto;display:flex;gap:3px}
+.ic-btn{
+  background:none;border:none;cursor:pointer;color:var(--text2);
+  padding:3px 5px;border-radius:4px;font-size:11px;
+  display:flex;align-items:center;transition:all .15s;
+}
+.ic-btn:hover{color:var(--text0);background:var(--bg4)}
+.ic-btn svg{width:12px;height:12px}
+
+/* ─── RESIZERS ───────────────────────────────────────── */
+.resizer-v{
+  width:3px;background:var(--border);cursor:col-resize;flex-shrink:0;
+  transition:background .15s;position:relative;
+}
+.resizer-v::after{content:'';position:absolute;inset:0 -4px}
+.resizer-v:hover,.resizer-v.drag{background:var(--cyan)}
+.resizer-h{
+  height:3px;background:var(--border);cursor:row-resize;flex-shrink:0;
+  transition:background .15s;position:relative;
+}
+.resizer-h::after{content:'';position:absolute;inset:-4px 0}
+.resizer-h:hover,.resizer-h.drag{background:var(--cyan)}
+
+/* ─── EDITOR PANEL ───────────────────────────────────── */
+#editorPanel{flex:0 0 500px;border-right:none}
+#editorWrap{flex:1;display:flex;overflow:hidden;background:var(--bg1)}
+#lineNums{
+  padding:10px 0;min-width:46px;background:var(--bg2);
+  border-right:1px solid var(--border);text-align:right;
+  font-size:12px;line-height:21px;color:var(--text3);
+  user-select:none;overflow:hidden;padding-right:10px;padding-left:6px;
+  flex-shrink:0;
+}
+.ln-err{color:var(--red);font-weight:600}
+#codeEditor{
+  flex:1;padding:10px 14px;background:transparent;
+  color:var(--text0);font-family:var(--mono);font-size:12px;
+  line-height:21px;border:none;outline:none;resize:none;
+  tab-size:4;overflow:auto;caret-color:var(--cyan);white-space:pre;
+}
+#codeEditor::selection{background:rgba(0,212,255,.18)}
+
+/* ─── RIGHT COLUMN ───────────────────────────────────── */
+#rightCol{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ─── STDIN PANEL ────────────────────────────────────── */
+#stdinPanel{flex:0 0 130px;border-bottom:1px solid var(--border)}
+#stdinArea{
+  flex:1;padding:9px 13px;background:var(--bg1);color:var(--text0);
+  font-family:var(--mono);font-size:11px;line-height:19px;
+  border:none;outline:none;resize:none;overflow:auto;
+}
+#stdinArea::placeholder{color:var(--text3)}
+
+/* ─── OUTPUT PANEL ───────────────────────────────────── */
+#outputPanel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Tabs */
+#tabBar{
+  display:flex;align-items:stretch;background:var(--bg2);
+  border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;
+}
+#tabBar::-webkit-scrollbar{height:0}
+.tab{
+  display:flex;align-items:center;gap:5px;
+  padding:0 14px;font-family:var(--ui);font-size:10px;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--text2);
+  cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .15s var(--ease);white-space:nowrap;user-select:none;
+  min-height:36px;
+}
+.tab:hover{color:var(--text1)}
+.tab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
+.tab-pip{width:5px;height:5px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .2s}
+.tab.has-err .tab-pip{background:var(--red);box-shadow:0 0 5px var(--red)}
+.tab.has-ok .tab-pip{background:var(--green);box-shadow:0 0 5px var(--green)}
+.tab.has-warn .tab-pip{background:var(--amber)}
+.tab-count{
+  font-size:9px;padding:1px 5px;border-radius:8px;
+  background:var(--red3);color:var(--red);border:1px solid rgba(255,77,106,.2);
+  display:none;
+}
+.tab.has-err .tab-count{display:inline}
+
+#outBody{flex:1;overflow:auto;background:var(--bg1)}
+.tc{display:none;padding:14px;animation:fadeUp .15s var(--ease)}
+.tc.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ─── OUTPUT COMPONENTS ──────────────────────────────── */
+.sec-label{
+  font-family:var(--ui);font-size:9px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--text2);
+  margin-bottom:7px;display:flex;align-items:center;gap:8px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.code-block{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);
+  padding:10px 14px;font-size:11px;line-height:20px;color:var(--text0);
+  overflow-x:auto;white-space:pre;min-height:36px;font-family:var(--mono);
+}
+.code-block.muted{color:var(--text2);white-space:normal;font-style:italic;font-size:11px}
+
+/* Token table */
+.tok-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r)}
+.tok-table{width:100%;border-collapse:collapse;font-size:11px}
+.tok-table th{
+  text-align:left;padding:6px 10px;background:var(--bg3);
+  color:var(--text2);font-family:var(--ui);font-size:9px;
+  font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1;
+}
+.tok-table td{padding:4px 10px;border-bottom:1px solid var(--border);color:var(--text1)}
+.tok-table tr:last-child td{border-bottom:none}
+.tok-table tr:hover td{background:var(--bg3)}
+.tt-KEYWORD{color:var(--violet);font-weight:500}
+.tt-IDENTIFIER{color:var(--text0)}
+.tt-SEMICOLON{color:var(--text2)}
+.tt-BRACE{color:var(--amber);font-weight:600}
+.tt-num{color:var(--text3);font-size:10px;font-family:var(--mono)}
+
+/* Error/warn/info items */
+.err-list{display:flex;flex-direction:column;gap:6px}
+.e-item{
+  display:flex;gap:10px;align-items:flex-start;
+  border-radius:var(--r);padding:9px 12px;
+  animation:slideIn .2s var(--ease);
+  border-left:3px solid;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+.e-err{background:var(--red3);border:1px solid rgba(255,77,106,.22);border-left-color:var(--red)}
+.e-warn{background:var(--amber3);border:1px solid rgba(255,183,0,.22);border-left-color:var(--amber)}
+.e-info{background:var(--cyan3);border:1px solid rgba(0,212,255,.18);border-left-color:var(--cyan)}
+.e-ok{background:var(--green3);border:1px solid rgba(0,255,157,.2);border-left-color:var(--green)}
+.e-ico{font-size:13px;margin-top:1px;flex-shrink:0}
+.e-body{flex:1;min-width:0}
+.e-hdr{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px}
+.e-phase{
+  font-family:var(--ui);font-size:9px;font-weight:700;
+  padding:1px 6px;border-radius:3px;letter-spacing:.07em;text-transform:uppercase;
+}
+.ph-lex{background:rgba(167,139,250,.15);color:var(--violet)}
+.ph-syn{background:rgba(255,183,0,.15);color:var(--amber)}
+.ph-sem{background:rgba(255,77,106,.15);color:var(--red)}
+.ph-ok{background:rgba(0,255,157,.12);color:var(--green)}
+.e-ln{font-size:10px;color:var(--text2)}
+.e-msg{font-size:11px;color:var(--text0);line-height:1.55;font-family:var(--mono)}
+.e-hint{font-size:10px;color:var(--cyan);margin-top:4px;font-family:var(--ui)}
+.e-hint::before{content:'💡  '}
+
+/* Empty state */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:180px;gap:8px;color:var(--text3);font-size:11px;
+  text-align:center;padding:20px;
+}
+.empty svg{width:32px;height:32px;opacity:.2;margin-bottom:4px}
+
+/* Status banner */
+.banner{
+  display:flex;align-items:center;gap:10px;
+  border-radius:var(--r);padding:10px 14px;font-size:12px;margin-bottom:12px;
+  font-family:var(--ui);font-weight:500;
+}
+.banner-ok{background:var(--green3);border:1px solid rgba(0,255,157,.25);color:var(--green)}
+.banner-err{background:var(--red3);border:1px solid rgba(255,77,106,.25);color:var(--red)}
+.banner-run{background:var(--cyan3);border:1px solid rgba(0,212,255,.2);color:var(--cyan)}
+.banner svg{width:16px;height:16px;flex-shrink:0}
+
+/* ─── SPINNER OVERLAY ────────────────────────────────── */
+#overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(8,11,16,.72);backdrop-filter:blur(4px);
+  z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+}
+#overlay.show{display:flex}
+.spin{
+  width:44px;height:44px;border:3px solid var(--border2);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin .75s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-label{font-family:var(--ui);color:var(--text1);font-size:12px;letter-spacing:.05em}
+.spin-phases{display:flex;gap:6px;margin-top:4px}
+.sp-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);transition:background .3s}
+.sp-dot.lit{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+
+/* ─── STATUSBAR ──────────────────────────────────────── */
+#statusbar{
+  display:flex;align-items:center;gap:10px;
+  padding:0 14px;height:24px;
+  background:var(--bg1);border-top:1px solid var(--border);
+  font-size:10px;color:var(--text2);flex-shrink:0;
+}
+.s-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);transition:background .2s;flex-shrink:0}
+.s-dot.ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.s-dot.err{background:var(--red);box-shadow:0 0 5px var(--red)}
+.s-dot.run{background:var(--cyan);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.s-msg{color:var(--text1)}
+.s-right{margin-left:auto;display:flex;gap:14px}
+
+/* ─── HISTORY DRAWER ─────────────────────────────────── */
+#histDrawer{
+  display:none;position:fixed;right:0;top:50px;bottom:24px;
+  width:270px;background:var(--bg1);border-left:1px solid var(--border);
+  z-index:100;flex-direction:column;
+  animation:slideLeft .2s var(--ease);
+}
+#histDrawer.open{display:flex}
+@keyframes slideLeft{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+.hdr-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  font-family:var(--ui);font-size:11px;font-weight:600;color:var(--text1);
+}
+#histList{flex:1;overflow-y:auto;padding:8px}
+.h-item{
+  padding:8px 10px;border-radius:var(--r);border:1px solid var(--border);
+  margin-bottom:5px;cursor:pointer;transition:all .15s;
+}
+.h-item:hover{background:var(--bg3);border-color:var(--border2)}
+.h-name{font-size:11px;color:var(--text0);margin-bottom:2px;font-family:var(--mono)}
+.h-meta{font-size:9px;color:var(--text2);font-family:var(--ui)}
+
+/* ─── TOAST ──────────────────────────────────────────── */
+#toast{
+  position:fixed;bottom:36px;left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:var(--bg5);border:1px solid var(--border3);
+  border-radius:var(--r);padding:7px 16px;font-size:11px;
+  color:var(--text0);opacity:0;pointer-events:none;
+  transition:all .25s var(--ease);z-index:2000;white-space:nowrap;
+  font-family:var(--ui);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ─── INLINE ERROR GUTTER MARKS ──────────────────────── */
+.ln-mark{display:inline-block;width:100%;text-align:right;padding-right:10px;padding-left:6px;line-height:21px;font-size:12px}
+.ln-mark.err-ln{background:rgba(255,77,106,.1);color:var(--red);font-weight:600}
+
+/* select */
+select{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--text1);font-family:var(--mono);font-size:10px;
+  padding:3px 7px;border-radius:var(--r);outline:none;cursor:pointer;
+}
+select:focus{border-color:var(--cyan)}
+</style>
+</head>
+<body>
+<div id="shell">
+
+<!-- ══ TOPBAR ══════════════════════════════════════════ -->
+<div id="topbar">
+  <div>
+    <span class="logo">MyCompiler<span class="logo-sub">Studio</span></span>
+  </div>
+  <div class="vsep"></div>
+  <input class="fn-input" id="filename" value="input.cpp" spellcheck="false" title="Filename">
+  <select id="modeSelect" title="Compiler mode">
+    <option value="full">Full Pipeline</option>
+    <option value="lex">Lexical Only</option>
+    <option value="parse">Lex + Parse</option>
+    <option value="sem">Up to Semantic</option>
+  </select>
+  <div class="spacer"></div>
+  <button class="btn btn-ghost" id="clearBtn" title="Reset editor">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M11 1.5A1.5 1.5 0 009.5 0h-3A1.5 1.5 0 005 1.5H2v1h12v-1h-3zm-4.5 0a.5.5 0 01.5-.5h3a.5.5 0 01.5.5H6.5zM3 4l1 10.5A1.5 1.5 0 005.5 16h5a1.5 1.5 0 001.5-1.5L13 4H3zm3 1.5h1l.5 8h-1l-.5-8zm3.5 0h1l-.5 8h-1l.5-8z"/></svg>
+    Reset
+  </button>
+  <button class="btn btn-ghost" id="histBtn" title="Execution history">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 7.5H5.25v-1.5h2V4h1.5v4.5z"/></svg>
+    History
+  </button>
+  <button class="btn btn-ghost" id="fmtBtn" title="Format / indent code">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 3.5h12v1H2v-1zm0 3h8v1H2v-1zm0 3h10v1H2v-1zm0 3h6v1H2v-1z"/></svg>
+    Format
+  </button>
+  <button class="btn btn-compile" id="compileBtn" title="Compile only (show all phases)">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2.5 2h3l-2 4h2l-3 6 .75-4H1.5l1-6zm4.5 0h7v1.5H7V2zm0 3.5h5V7H7V5.5zm0 3.5h7V10.5H7V9zm0 3.5h5V14H7v-1.5z"/></svg>
+    Compile
+  </button>
+  <button class="btn btn-run" id="runBtn" title="Run — Ctrl+Enter">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5l9 5.5-9 5.5V2.5z"/></svg>
+    Run  <span class="kbd">Ctrl+↵</span>
+  </button>
+  <div class="vsep"></div>
+  <button class="btn btn-ghost" id="dlCodeBtn" title="Download .cpp">↓</button>
+  <button id="themeBtn" title="Toggle theme">🌙</button>
+</div>
+
+<!-- ══ WORKSPACE ════════════════════════════════════════ -->
+<div id="workspace">
+
+  <!-- EDITOR PANEL -->
+  <div class="panel" id="editorPanel">
+    <div class="pane-hdr">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="var(--cyan)" style="flex-shrink:0"><path d="M9.5 1.5l-7 7v5h5l7-7-5-5zm-4.2 10H4v-1.3l4.7-4.7 1.3 1.3-4.7 4.7zm5.7-5.7l-1.3-1.3 1.5-1.5 1.3 1.3-1.5 1.5z"/></svg>
+      <span class="pane-title" id="edHdrName">input.cpp</span>
+      <div class="pane-actions">
+        <button class="ic-btn" id="copyCodeBtn" title="Copy code">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 00-2 2v8a2 2 0 002 2h5a2 2 0 002-2v-1H9.5v1a.5.5 0 01-.5.5H4a.5.5 0 01-.5-.5V4a.5.5 0 01.5-.5h1V2H4zm3 0v1.5h4V6H13V4a2 2 0 00-2-2H7zm2 3.5H7a2 2 0 00-2 2v5a2 2 0 002 2h4a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="editorWrap">
+      <div id="lineNums"></div>
+      <textarea id="codeEditor" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+>int a;
+int b;
+</textarea>
+    </div>
+  </div>
+
+  <div class="resizer-v" id="rv1"></div>
+
+  <!-- RIGHT COLUMN -->
+  <div id="rightCol">
+
+    <!-- STDIN PANEL -->
+    <div class="panel" id="stdinPanel">
+      <div class="pane-hdr">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="var(--green)" style="flex-shrink:0"><path d="M2 2h12v12H2V2zm1.5 1.5v9h9v-9h-9z" opacity=".3"/><path d="M5 5h6v1.5H5V5zm0 2.5h6V9H5V7.5zm0 2.5h4V11.5H5V10z"/></svg>
+        <span class="pane-title">stdin / custom input</span>
+        <div class="pane-actions">
+          <button class="ic-btn" id="clearStdinBtn" title="Clear stdin">
+            <svg viewBox="0 0 16 16" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+      <textarea id="stdinArea" placeholder="Provide stdin here (not used by this compiler — for display purposes)…"></textarea>
+    </div>
+
+    <div class="resizer-h" id="rh1"></div>
+
+    <!-- OUTPUT PANEL -->
+    <div class="panel" id="outputPanel">
+      <div class="pane-hdr" style="padding:0;border-bottom:none">
+        <div id="tabBar">
+          <div class="tab active" data-tab="overview"><div class="tab-pip" id="pip-overview"></div>Overview</div>
+          <div class="tab" data-tab="lexer"><div class="tab-pip" id="pip-lexer"></div>Lexical<span class="tab-count" id="cnt-lexer">0</span></div>
+          <div class="tab" data-tab="parser"><div class="tab-pip" id="pip-parser"></div>Syntax<span class="tab-count" id="cnt-parser">0</span></div>
+          <div class="tab" data-tab="semantic"><div class="tab-pip" id="pip-semantic"></div>Semantic<span class="tab-count" id="cnt-semantic">0</span></div>
+          <div class="tab" data-tab="ir"><div class="tab-pip" id="pip-ir"></div>IR</div>
+          <div class="tab" data-tab="optimized"><div class="tab-pip" id="pip-optimized"></div>Optimized</div>
+          <div class="tab" data-tab="target"><div class="tab-pip" id="pip-target"></div>Target</div>
+          <div class="tab" data-tab="raw"><div class="tab-pip" id="pip-raw"></div>Raw Output</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:3px;padding-right:10px;flex-shrink:0">
+          <button class="ic-btn" id="copyOutBtn" title="Copy all output">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 00-2 2v8a2 2 0 002 2h5a2 2 0 002-2v-1H9.5v1a.5.5 0 01-.5.5H4a.5.5 0 01-.5-.5V4a.5.5 0 01.5-.5h1V2H4zm3 0v1.5h4V6H13V4a2 2 0 00-2-2H7zm2 3.5H7a2 2 0 00-2 2v5a2 2 0 002 2h4a2 2 0 002-2v-5a2 2 0 00-2-2z"/></svg>
+          </button>
+          <button class="ic-btn" id="dlOutBtn" title="Download output">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.25 1v7.44l-1.97-1.97-1.06 1.06L7.5 10.81l3.28-3.28-1.06-1.06L8 8.44V1H7.25zM2 13v1.5h12V13H2z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="outBody">
+
+        <!-- OVERVIEW -->
+        <div class="tc active" id="tc-overview">
+          <div class="empty" id="ov-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Press <strong style="color:var(--cyan)">Run</strong> to compile &amp; execute all phases<br>
+            <span style="font-size:10px;color:var(--text3);margin-top:4px;display:block">or use <kbd style="background:var(--bg4);border:1px solid var(--border3);border-radius:3px;padding:0 4px;font-size:9px">Ctrl+Enter</kbd></span>
+          </div>
+          <div id="ov-result" style="display:none"></div>
+        </div>
+
+        <!-- LEXER -->
+        <div class="tc" id="tc-lexer">
+          <div class="empty" id="lx-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M4 6h16M4 10h16M4 14h8"/></svg>
+            No lexical analysis yet
+          </div>
+          <div id="lx-result" style="display:none"></div>
+        </div>
+
+        <!-- PARSER -->
+        <div class="tc" id="tc-parser">
+          <div class="empty" id="pa-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v1m0 16v1M3 12h1m16 0h1"/></svg>
+            No syntax analysis yet
+          </div>
+          <div id="pa-result" style="display:none"></div>
+        </div>
+
+        <!-- SEMANTIC -->
+        <div class="tc" id="tc-semantic">
+          <div class="empty" id="se-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            No semantic analysis yet
+          </div>
+          <div id="se-result" style="display:none"></div>
+        </div>
+
+        <!-- IR -->
+        <div class="tc" id="tc-ir">
+          <div class="empty" id="ir-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            No intermediate code yet
+          </div>
+          <div id="ir-result" style="display:none"></div>
+        </div>
+
+        <!-- OPTIMIZED -->
+        <div class="tc" id="tc-optimized">
+          <div class="empty" id="op-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            No optimized code yet
+          </div>
+          <div id="op-result" style="display:none"></div>
+        </div>
+
+        <!-- TARGET -->
+        <div class="tc" id="tc-target">
+          <div class="empty" id="tg-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9l6 6m0-6l-6 6"/></svg>
+            No target code yet
+          </div>
+          <div id="tg-result" style="display:none"></div>
+        </div>
+
+        <!-- RAW -->
+        <div class="tc" id="tc-raw">
+          <div class="empty" id="rw-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10l3 3-3 3m5 0h3"/></svg>
+            No raw compiler output yet
+          </div>
+          <div id="rw-result" style="display:none"></div>
+        </div>
+
+      </div><!-- /outBody -->
+    </div><!-- /outputPanel -->
+
+  </div><!-- /rightCol -->
+</div><!-- /workspace -->
+
+<!-- STATUSBAR -->
+<div id="statusbar">
+  <div class="s-dot" id="sdot"></div>
+  <span class="s-msg" id="smsg">Ready — write code and press Run</span>
+  <div class="s-right">
+    <span id="curPos">Ln 1, Col 1</span>
+    <span id="charCnt">0 ch</span>
+    <span id="errBadge" style="color:var(--red);display:none"></span>
+    <span style="color:var(--text3)">mycompiler  •  UTF-8</span>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<!-- SPINNER -->
+<div id="overlay">
+  <div class="spin"></div>
+  <div class="spin-label" id="spinLbl">Compiling…</div>
+  <div class="spin-phases">
+    <div class="sp-dot" id="sp0" title="Lexical"></div>
+    <div class="sp-dot" id="sp1" title="Syntax"></div>
+    <div class="sp-dot" id="sp2" title="Semantic"></div>
+    <div class="sp-dot" id="sp3" title="IR"></div>
+    <div class="sp-dot" id="sp4" title="Optimize"></div>
+    <div class="sp-dot" id="sp5" title="Codegen"></div>
+  </div>
+</div>
+
+<!-- HISTORY DRAWER -->
+<div id="histDrawer">
+  <div class="hdr-row">
+    Execution History
+    <button class="ic-btn" id="closeHist" style="font-size:13px">✕</button>
+  </div>
+  <div id="histList"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   COMPILER ENGINE
+   Mirrors exact output format of mycompiler.exe
+   ═══════════════════════════════════════════════════════════ */
+
+// ── LEXER (mirrors lexer.cpp) ────────────────────────────
+function lexerTokenize(code) {
+  const tokens = [];
+  let word = '';
+  let line = 1;
+
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i];
+
+    if (c === '\n') { line++; continue; }
+
+    if (c === ' ' || c === '\t' || c === '\r') {
+      if (word !== '') {
+        tokens.push({ type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER', value: word, line });
+        word = '';
+      }
+      continue;
+    }
+
+    if (c === '{' || c === '}') {
+      if (word !== '') {
+        tokens.push({ type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER', value: word, line });
+        word = '';
+      }
+      tokens.push({ type: 'BRACE', value: c, line });
+      continue;
+    }
+
+    if (c === ';') {
+      if (word !== '') {
+        tokens.push({ type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER', value: word, line });
+        word = '';
+      }
+      tokens.push({ type: 'SEMICOLON', value: ';', line });
+      continue;
+    }
+
+    word += c;
+  }
+
+  if (word !== '') {
+    tokens.push({ type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER', value: word, line });
+  }
+
+  return tokens;
+}
+
+// ── PARSER (mirrors parser.cpp) ──────────────────────────
+function parserParse(tokens) {
+  const parsed = [];
+  const syntaxErrors = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+
+    if (t.type === 'KEYWORD' && t.value === 'int') {
+      if (i + 2 < tokens.length &&
+          tokens[i+1].type === 'IDENTIFIER' &&
+          tokens[i+2].type === 'SEMICOLON') {
+        parsed.push({ type: 'DECL', value: tokens[i+1].value, line: t.line });
+        i += 2;
+      } else {
+        syntaxErrors.push({
+          phase: 'Syntax',
+          line: t.line,
+          msg: `Invalid declaration at line ${t.line}`,
+          hint: `Expected: int <identifier> ; — check for missing identifier or semicolon`
+        });
+      }
+    } else if (t.type === 'BRACE' && t.value === '{') {
+      parsed.push({ type: 'ENTER_SCOPE', value: '', line: t.line });
+    } else if (t.type === 'BRACE' && t.value === '}') {
+      parsed.push({ type: 'EXIT_SCOPE', value: '', line: t.line });
+    } else if (t.type === 'IDENTIFIER' && (i === 0 || tokens[i-1]?.type !== 'KEYWORD')) {
+      // standalone identifier not preceded by keyword — could be undeclared usage
+    }
+  }
+
+  return { parsed, syntaxErrors };
+}
+
+// ── SEMANTIC (mirrors semantic.cpp) ─────────────────────
+function semanticAnalyze(parsed) {
+  const scopes = [new Map()];
+  const errors = [];
+  const symbols = [];
+
+  function currentScope() { return scopes[scopes.length - 1]; }
+
+  for (const stmt of parsed) {
+    if (stmt.type === 'ENTER_SCOPE') {
+      scopes.push(new Map());
+    } else if (stmt.type === 'EXIT_SCOPE') {
+      if (scopes.length > 1) scopes.pop();
+    } else if (stmt.type === 'DECL') {
+      const scope = currentScope();
+      if (scope.has(stmt.value)) {
+        errors.push({
+          phase: 'Semantic',
+          line: stmt.line,
+          msg: `Variable '${stmt.value}' redeclared at line ${stmt.line}`,
+          hint: `Remove the duplicate declaration of '${stmt.value}', or rename it to a unique identifier`
+        });
+      } else {
+        scope.set(stmt.value, 'int');
+        symbols.push({ name: stmt.value, type: 'int', scope: scopes.length === 1 ? 'global' : 'local', line: stmt.line, init: false });
+      }
+    }
+  }
+
+  const hasError = errors.length > 0;
+  return { errors, symbols, hasError, noErrorMsg: hasError ? '' : 'No semantic errors.' };
+}
+
+// ── IR GENERATOR (mirrors ir.cpp) ────────────────────────
+function generateIR(parsed) {
+  return parsed
+    .filter(s => s.type === 'DECL')
+    .map(s => `DECL ${s.value}`);
+}
+
+// ── OPTIMIZER (mirrors optimizer.cpp) ───────────────────
+function optimize(ir) {
+  const seen = new Set();
+  const optimized = [];
+  const eliminated = [];
+
+  for (const instr of ir) {
+    if (!seen.has(instr)) {
+      optimized.push(instr);
+      seen.add(instr);
+    } else {
+      eliminated.push(instr);
+    }
+  }
+
+  return { optimized, eliminated };
+}
+
+// ── CODE GENERATOR (mirrors codegen.cpp) ────────────────
+function generateCode(optimized) {
+  return optimized.map(instr => {
+    const varName = instr.substring(5); // remove "DECL "
+    return `ALLOC ${varName}`;
+  });
+}
+
+// ── FORMAT RAW OUTPUT (mirrors main.cpp stdout) ──────────
+function formatRawOutput(tokens, parsed, semResult, ir, optResult, target, syntaxErrors, stopped) {
+  const lines = [];
+
+  lines.push('\n=============================');
+  lines.push('   LEXICAL ANALYSIS');
+  lines.push('=============================');
+  for (const t of tokens) {
+    lines.push(`(${t.type}, ${t.value}, line ${t.line})`);
+  }
+
+  lines.push('\n=============================');
+  lines.push('   SYNTAX ANALYSIS');
+  lines.push('=============================');
+  for (const e of syntaxErrors) {
+    lines.push(`[Syntax Error] Invalid declaration at line ${e.line}`);
+  }
+  for (const s of parsed) {
+    lines.push(`${s.type}${s.value ? ' ' + s.value : ''} (line ${s.line})`);
+  }
+
+  lines.push('\n=============================');
+  lines.push('   SEMANTIC ANALYSIS');
+  lines.push('=============================');
+  for (const e of semResult.errors) {
+    lines.push(`Error: Variable '${e.msg.match(/'([^']+)'/)?.[1] || '?'}' redeclared at line ${e.line}`);
+  }
+  if (!semResult.hasError) lines.push('No semantic errors.');
+
+  if (stopped) {
+    lines.push('\n=============================');
+    lines.push('   COMPILATION FAILED');
+    lines.push('=============================');
+    return lines.join('\n');
+  }
+
+  lines.push('\n=============================');
+  lines.push('   INTERMEDIATE CODE');
+  lines.push('=============================');
+  for (const i of ir) lines.push(i);
+
+  lines.push('\n=============================');
+  lines.push('   OPTIMIZED CODE');
+  lines.push('=============================');
+  for (const i of optResult.optimized) lines.push(i);
+
+  lines.push('\n=============================');
+  lines.push('   TARGET CODE');
+  lines.push('=============================');
+  for (const t of target) lines.push(t);
+
+  lines.push('\n=============================');
+  lines.push('   COMPILATION SUCCESSFUL');
+  lines.push('=============================');
+
+  return lines.join('\n');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN COMPILE FUNCTION
+   ═══════════════════════════════════════════════════════════ */
+async function runCompiler(code, mode) {
+  // Simulate realistic per-phase timing
+  await tick(80);  setSpinPhase(0);
+  await tick(120); setSpinPhase(1);
+  await tick(100); setSpinPhase(2);
+
+  // LEXICAL
+  const tokens = lexerTokenize(code);
+
+  await tick(80); setSpinPhase(3);
+
+  // SYNTAX
+  const { parsed, syntaxErrors } = parserParse(tokens);
+
+  await tick(80); setSpinPhase(4);
+
+  // SEMANTIC
+  const semResult = semanticAnalyze(parsed);
+
+  const stopped = semResult.hasError || syntaxErrors.length > 0;
+
+  let ir = [], optResult = { optimized: [], eliminated: [] }, target = [];
+
+  if (!stopped && (mode === 'full' || mode === 'ir')) {
+    await tick(80); setSpinPhase(5);
+    ir = generateIR(parsed);
+    optResult = optimize(ir);
+    target = generateCode(optResult.optimized);
+  }
+
+  const rawOutput = formatRawOutput(tokens, parsed, semResult, ir, optResult, target, syntaxErrors, stopped);
+
+  return {
+    code,
+    tokens,
+    parsed,
+    syntaxErrors,
+    semResult,
+    ir,
+    optResult,
+    target,
+    rawOutput,
+    success: !stopped,
+    allErrors: [...syntaxErrors, ...semResult.errors]
+  };
+}
+
+function tick(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* ═══════════════════════════════════════════════════════════
+   UI CONTROLLER
+   ═══════════════════════════════════════════════════════════ */
+const editor     = document.getElementById('codeEditor');
+const lineNums   = document.getElementById('lineNums');
+const sdot       = document.getElementById('sdot');
+const smsg       = document.getElementById('smsg');
+const overlay    = document.getElementById('overlay');
+const spinLbl    = document.getElementById('spinLbl');
+const toast      = document.getElementById('toast');
+const errBadge   = document.getElementById('errBadge');
+const curPos     = document.getElementById('curPos');
+const charCnt    = document.getElementById('charCnt');
+
+let history = JSON.parse(localStorage.getItem('myc_hist') || '[]');
+let lastResult = null;
+let errorLines = new Set();
+
+// ── Line numbers ─────────────────────────────────────────
+function updateLineNums() {
+  const lines = editor.value.split('\n');
+  lineNums.innerHTML = lines.map((_, i) => {
+    const ln = i + 1;
+    const isErr = errorLines.has(ln);
+    return `<div class="ln-mark ${isErr ? 'err-ln' : ''}">${ln}</div>`;
+  }).join('');
+  lineNums.scrollTop = editor.scrollTop;
+}
+editor.addEventListener('input', () => { updateLineNums(); updateSB(); saveLocal(); });
+editor.addEventListener('scroll', () => { lineNums.scrollTop = editor.scrollTop; });
+updateLineNums();
+
+// ── Tab key ──────────────────────────────────────────────
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(editor.selectionEnd);
+    editor.selectionStart = editor.selectionEnd = s + 4;
+    updateLineNums();
+  }
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); doRun(); }
+  if (e.ctrlKey && e.key === 's') { e.preventDefault(); saveLocal(); showToast('Saved to localStorage'); }
+});
+editor.addEventListener('keyup', updateCursor);
+editor.addEventListener('click', updateCursor);
+editor.addEventListener('scroll', () => { lineNums.scrollTop = editor.scrollTop; });
+
+function updateCursor() {
+  const val = editor.value.slice(0, editor.selectionStart).split('\n');
+  curPos.textContent = `Ln ${val.length}, Col ${val[val.length - 1].length + 1}`;
+}
+
+function updateSB() {
+  charCnt.textContent = `${editor.value.length} ch`;
+}
+updateSB();
+
+// ── Tabs ─────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.tc').forEach(c => c.classList.toggle('active', c.id === 'tc-' + name));
+}
+
+// ── Set tab state ────────────────────────────────────────
+function setTabState(name, state) {
+  const tab = document.querySelector(`.tab[data-tab="${name}"]`);
+  if (!tab) return;
+  tab.classList.remove('has-err', 'has-ok', 'has-warn');
+  if (state) tab.classList.add(`has-${state}`);
+  const pip = document.getElementById(`pip-${name}`);
+  if (pip) {
+    pip.style.background = state === 'err' ? 'var(--red)' : state === 'ok' ? 'var(--green)' : state === 'warn' ? 'var(--amber)' : 'var(--text3)';
+  }
+}
+function setTabCount(name, n) {
+  const el = document.getElementById(`cnt-${name}`);
+  if (el) { el.textContent = n; el.style.display = n > 0 ? '' : 'none'; }
+}
+
+// ── Spinner phases ───────────────────────────────────────
+function setSpinPhase(n) {
+  const labels = ['Lexing…', 'Parsing…', 'Semantic…', 'Generating IR…', 'Optimizing…', 'Codegen…'];
+  spinLbl.textContent = labels[n] || 'Compiling…';
+  for (let i = 0; i <= n; i++) document.getElementById('sp' + i)?.classList.add('lit');
+}
+function resetSpinPhases() {
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById('sp' + i);
+    if (el) el.classList.remove('lit');
+  }
+}
+
+// ── Show/hide empty+result pairs ─────────────────────────
+function show(prefix, resultHTML) {
+  document.getElementById(prefix + '-empty').style.display = 'none';
+  const r = document.getElementById(prefix + '-result');
+  r.innerHTML = resultHTML;
+  r.style.display = 'block';
+}
+function hide(prefix) {
+  document.getElementById(prefix + '-empty').style.display = '';
+  document.getElementById(prefix + '-result').style.display = 'none';
+}
+
+// ── Status ───────────────────────────────────────────────
+function setStatus(state, msg) {
+  sdot.className = 's-dot' + (state === 'ok' ? ' ok' : state === 'err' ? ' err' : state === 'run' ? ' run' : '');
+  smsg.textContent = msg;
+}
+
+// ── Render helpers ───────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderErrorList(errors) {
+  if (!errors.length) return `<div class="e-item e-ok"><div class="e-ico">✅</div><div class="e-body"><div class="e-msg">No errors detected.</div></div></div>`;
+  return `<div class="err-list">${errors.map(e => `
+    <div class="e-item e-err">
+      <div class="e-ico">⛔</div>
+      <div class="e-body">
+        <div class="e-hdr">
+          <span class="e-phase ${e.phase === 'Lexical' ? 'ph-lex' : e.phase === 'Syntax' ? 'ph-syn' : 'ph-sem'}">${e.phase}</span>
+          ${e.line ? `<span class="e-ln">Line ${e.line}</span>` : ''}
+        </div>
+        <div class="e-msg">${esc(e.msg)}</div>
+        ${e.hint ? `<div class="e-hint">${esc(e.hint)}</div>` : ''}
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function renderTokenTable(tokens) {
+  if (!tokens.length) return `<div class="code-block muted">No tokens produced.</div>`;
+  const rows = tokens.map((t, i) => `
+    <tr>
+      <td class="tt-num">${i + 1}</td>
+      <td class="tt-${t.type}" style="font-weight:500">${esc(t.type)}</td>
+      <td class="tt-${t.type}">${esc(t.value)}</td>
+      <td class="tt-num">${t.line}</td>
+    </tr>`).join('');
+  return `<div class="tok-wrap"><table class="tok-table">
+    <thead><tr><th>#</th><th>Type</th><th>Value</th><th>Line</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function renderSymbolTable(symbols) {
+  if (!symbols.length) return `<div class="code-block muted">No symbols declared.</div>`;
+  const rows = symbols.map(s => `
+    <tr>
+      <td style="color:var(--text0)">${esc(s.name)}</td>
+      <td style="color:var(--violet)">${esc(s.type)}</td>
+      <td style="color:var(--text2)">${esc(s.scope)}</td>
+      <td style="color:var(--text3)">${s.line}</td>
+    </tr>`).join('');
+  return `<div class="tok-wrap"><table class="tok-table">
+    <thead><tr><th>Symbol</th><th>Type</th><th>Scope</th><th>Line</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ── RENDER ALL TABS from result ──────────────────────────
+function renderResult(r) {
+  lastResult = r;
+  errorLines = new Set(r.allErrors.map(e => e.line));
+  updateLineNums();
+
+  // ── Overview ────────────────────────────────────────────
+  const totalErr = r.allErrors.length;
+  const bannerClass = r.success ? 'banner-ok' : 'banner-err';
+  const bannerIcon = r.success
+    ? `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.854 3.646a.5.5 0 010 .708l-7 7a.5.5 0 01-.708 0l-3.5-3.5a.5.5 0 11.708-.708L6.5 10.293l6.646-6.647a.5.5 0 01.708 0z"/></svg>`
+    : `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12A5 5 0 118 3a5 5 0 010 10zm-.75-8.5h1.5v4.5h-1.5V4.5zm0 5.5h1.5V11.5h-1.5V10z"/></svg>`;
+  const bannerMsg = r.success
+    ? `Compilation successful — all ${r.target.length} instruction(s) generated`
+    : `Compilation failed — ${totalErr} error(s) found`;
+
+  let ovHTML = `<div class="banner ${bannerClass}">${bannerIcon} ${bannerMsg}</div>`;
+
+  // Phase summary grid
+  ovHTML += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:14px">`;
+  const phases = [
+    { label: 'Lexical', ok: true, detail: `${r.tokens.length} tokens` },
+    { label: 'Syntax', ok: r.syntaxErrors.length === 0, detail: r.syntaxErrors.length === 0 ? 'No errors' : `${r.syntaxErrors.length} error(s)` },
+    { label: 'Semantic', ok: !r.semResult.hasError, detail: r.semResult.hasError ? `${r.semResult.errors.length} error(s)` : `${r.semResult.symbols.length} symbol(s)` },
+    { label: 'IR', ok: r.ir.length > 0, detail: r.ir.length ? `${r.ir.length} instruction(s)` : 'Skipped' },
+    { label: 'Optimizer', ok: r.ir.length > 0, detail: r.ir.length ? `${r.optResult.eliminated.length} eliminated` : 'Skipped' },
+    { label: 'Codegen', ok: r.target.length > 0, detail: r.target.length ? `${r.target.length} instruction(s)` : 'Skipped' },
+  ];
+  for (const p of phases) {
+    const col = p.ok ? 'var(--green)' : 'var(--red)';
+    const bg = p.ok ? 'var(--green3)' : 'var(--red3)';
+    ovHTML += `<div style="background:${bg};border:1px solid ${p.ok ? 'rgba(0,255,157,.2)' : 'rgba(255,77,106,.2)'};border-radius:var(--r);padding:10px 12px">
+      <div style="font-family:var(--ui);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${col};margin-bottom:4px">${p.label}</div>
+      <div style="font-size:11px;color:var(--text1);font-family:var(--ui)">${p.detail}</div>
+    </div>`;
+  }
+  ovHTML += `</div>`;
+
+  if (totalErr > 0) {
+    ovHTML += `<div class="sec-label">All Errors</div>` + renderErrorList(r.allErrors);
+  }
+
+  show('ov', ovHTML);
+  setTabState('overview', r.success ? 'ok' : 'err');
+
+  // ── Lexical tab ─────────────────────────────────────────
+  let lxHTML = `<div class="sec-label">Tokens — ${r.tokens.length} total</div>` + renderTokenTable(r.tokens);
+  show('lx', lxHTML);
+  setTabState('lexer', 'ok');
+
+  // ── Syntax tab ──────────────────────────────────────────
+  let paHTML = '';
+  if (r.syntaxErrors.length > 0) {
+    paHTML += `<div class="sec-label" style="margin-bottom:8px">Syntax Errors</div>` + renderErrorList(r.syntaxErrors);
+    setTabCount('parser', r.syntaxErrors.length);
+    setTabState('parser', 'err');
+  } else {
+    setTabState('parser', 'ok');
+    setTabCount('parser', 0);
+  }
+
+  paHTML += `<div class="sec-label" style="margin-top:12px">Parse Statements — ${r.parsed.length} total</div>`;
+  if (r.parsed.length) {
+    paHTML += `<div class="code-block">${r.parsed.map(s =>
+      `<span style="color:var(--cyan)">${esc(s.type)}</span>${s.value ? ` <span style="color:var(--text0)">${esc(s.value)}</span>` : ''} <span style="color:var(--text3)">(line ${s.line})</span>`
+    ).join('\n')}</div>`;
+  } else {
+    paHTML += `<div class="code-block muted">No statements parsed.</div>`;
+  }
+
+  show('pa', paHTML);
+
+  // ── Semantic tab ────────────────────────────────────────
+  let seHTML = '';
+  if (r.semResult.errors.length > 0) {
+    seHTML += `<div class="sec-label">Semantic Errors</div>` + renderErrorList(r.semResult.errors);
+    setTabCount('semantic', r.semResult.errors.length);
+    setTabState('semantic', 'err');
+  } else {
+    seHTML += `<div class="e-item e-ok" style="margin-bottom:12px">
+      <div class="e-ico">✅</div>
+      <div class="e-body"><div class="e-msg">No semantic errors.</div></div>
+    </div>`;
+    setTabState('semantic', 'ok');
+    setTabCount('semantic', 0);
+  }
+
+  seHTML += `<div class="sec-label" style="margin-top:${r.semResult.errors.length ? 12 : 0}px">Symbol Table</div>` + renderSymbolTable(r.semResult.symbols);
+  show('se', seHTML);
+
+  // ── IR tab ──────────────────────────────────────────────
+  if (r.ir.length > 0) {
+    show('ir', `<div class="sec-label">Intermediate Representation — ${r.ir.length} instruction(s)</div>
+      <div class="code-block">${r.ir.map(l => `<span style="color:var(--amber)">${esc(l.split(' ')[0])}</span> <span style="color:var(--text0)">${esc(l.split(' ').slice(1).join(' '))}</span>`).join('\n')}</div>`);
+    setTabState('ir', 'ok');
+  } else {
+    hide('ir');
+    setTabState('ir', null);
+  }
+
+  // ── Optimized tab ────────────────────────────────────────
+  if (r.optResult.optimized.length > 0) {
+    let optHTML = `<div class="sec-label">Optimized IR — ${r.optResult.optimized.length} instruction(s)</div>
+      <div class="code-block">${r.optResult.optimized.map(l =>
+        `<span style="color:var(--amber)">${esc(l.split(' ')[0])}</span> <span style="color:var(--text0)">${esc(l.split(' ').slice(1).join(' '))}</span>`
+      ).join('\n')}</div>`;
+
+    if (r.optResult.eliminated.length > 0) {
+      optHTML += `<div class="sec-label" style="margin-top:12px">Eliminated (Duplicates Removed)</div>
+        <div class="code-block" style="color:var(--red);text-decoration:line-through">${r.optResult.eliminated.map(esc).join('\n')}</div>`;
+    } else {
+      optHTML += `<div class="sec-label" style="margin-top:12px">Optimization Report</div>
+        <div class="code-block" style="color:var(--green)">✓ No redundant instructions — code is already optimal.</div>`;
+    }
+
+    show('op', optHTML);
+    setTabState('optimized', r.optResult.eliminated.length > 0 ? 'warn' : 'ok');
+  } else {
+    hide('op');
+    setTabState('optimized', null);
+  }
+
+  // ── Target code tab ──────────────────────────────────────
+  if (r.target.length > 0) {
+    show('tg', `<div class="sec-label">Target Code — ${r.target.length} instruction(s)</div>
+      <div class="code-block">${r.target.map(l => `<span style="color:var(--cyan)">${esc(l.split(' ')[0])}</span> <span style="color:var(--green)">${esc(l.split(' ').slice(1).join(' '))}</span>`).join('\n')}</div>`);
+    setTabState('target', 'ok');
+  } else {
+    hide('tg');
+    setTabState('target', null);
+  }
+
+  // ── Raw output tab ───────────────────────────────────────
+  show('rw', `<div class="sec-label">Raw stdout (mycompiler.exe)</div>
+    <div class="code-block" style="font-size:11px;line-height:19px;color:var(--text1)">${esc(r.rawOutput)}</div>`);
+  setTabState('raw', r.success ? 'ok' : 'err');
+
+  // Status bar
+  if (totalErr > 0) {
+    errBadge.textContent = `${totalErr} error${totalErr > 1 ? 's' : ''}`;
+    errBadge.style.display = '';
+  } else {
+    errBadge.style.display = 'none';
+  }
+}
+
+// ── Main compile flow ────────────────────────────────────
+async function doRun(mode) {
+  const code = editor.value;
+  if (!code.trim()) {
+    showToast('⚠️  Editor is empty — write some code first');
+    return;
+  }
+
+  resetSpinPhases();
+  overlay.classList.add('show');
+  setStatus('run', 'Compiling…');
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('compileBtn').disabled = true;
+
+  try {
+    const m = mode || document.getElementById('modeSelect').value;
+    const result = await runCompiler(code, m);
+
+    renderResult(result);
+    saveHistory(result);
+    switchTab('overview');
+
+    if (result.success) {
+      setStatus('ok', `Compilation successful — ${result.target.length} instruction(s) generated`);
+    } else {
+      setStatus('err', `Compilation failed — ${result.allErrors.length} error(s)`);
+    }
+  } catch (err) {
+    setStatus('err', 'Compiler crashed: ' + err.message);
+    show('ov', `<div class="banner banner-err">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12A5 5 0 118 3a5 5 0 010 10zm-.75-8.5h1.5v4.5h-1.5V4.5zm0 5.5h1.5V11.5h-1.5V10z"/></svg>
+      Compiler error: ${esc(err.message)}
+    </div>`);
+  } finally {
+    overlay.classList.remove('show');
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('compileBtn').disabled = false;
+  }
+}
+
+// ── Button events ────────────────────────────────────────
+document.getElementById('runBtn').addEventListener('click', () => doRun('full'));
+document.getElementById('compileBtn').addEventListener('click', () => doRun('sem'));
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!editor.value || confirm('Reset editor and all output?')) {
+    editor.value = '';
+    document.getElementById('stdinArea').value = '';
+    errorLines.clear();
+    updateLineNums(); updateSB();
+    ['lx','pa','se','ir','op','tg','rw','ov'].forEach(hide);
+    ['lexer','parser','semantic','ir','optimized','target','raw','overview'].forEach(n => setTabState(n, null));
+    ['parser','semantic'].forEach(n => setTabCount(n, 0));
+    errBadge.style.display = 'none';
+    setStatus('idle', 'Ready');
+    lastResult = null;
+  }
+});
+
+document.getElementById('fmtBtn').addEventListener('click', () => {
+  const lines = editor.value.split('\n');
+  let depth = 0;
+  editor.value = lines.map(l => {
+    const t = l.trim();
+    if (!t) return '';
+    if (t === '}' || t === '};') depth = Math.max(0, depth - 1);
+    const ind = '    '.repeat(depth);
+    if (t.endsWith('{')) depth++;
+    return ind + t;
+  }).join('\n');
+  updateLineNums();
+  showToast('Code formatted');
+});
+
+document.getElementById('copyCodeBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(editor.value).then(() => showToast('Code copied!'));
+});
+
+document.getElementById('dlCodeBtn').addEventListener('click', () => {
+  const name = document.getElementById('filename').value || 'input.cpp';
+  dl(editor.value, name, 'text/plain');
+});
+
+document.getElementById('copyOutBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  navigator.clipboard.writeText(lastResult.rawOutput).then(() => showToast('Output copied!'));
+});
+
+document.getElementById('dlOutBtn').addEventListener('click', () => {
+  if (!lastResult) return;
+  dl(lastResult.rawOutput, 'compiler_output.txt', 'text/plain');
+});
+
+document.getElementById('clearStdinBtn').addEventListener('click', () => {
+  document.getElementById('stdinArea').value = '';
+});
+
+document.getElementById('filename').addEventListener('input', e => {
+  document.getElementById('edHdrName').textContent = e.target.value;
+});
+
+// ── Theme ────────────────────────────────────────────────
+document.getElementById('themeBtn').addEventListener('click', () => {
+  const html = document.documentElement;
+  const isDark = html.dataset.theme === 'dark';
+  html.dataset.theme = isDark ? 'light' : 'dark';
+  document.getElementById('themeBtn').textContent = isDark ? '☀️' : '🌙';
+});
+
+// ── History ──────────────────────────────────────────────
+document.getElementById('histBtn').addEventListener('click', () => {
+  document.getElementById('histDrawer').classList.add('open');
+  renderHistory();
+});
+document.getElementById('closeHist').addEventListener('click', () => {
+  document.getElementById('histDrawer').classList.remove('open');
+});
+
+function saveHistory(r) {
+  const entry = {
+    code: r.code.slice(0, 200),
+    time: new Date().toLocaleTimeString(),
+    success: r.success,
+    errors: r.allErrors.length,
+    tokens: r.tokens.length,
+    target: r.target.length
+  };
+  history.unshift(entry);
+  if (history.length > 20) history.pop();
+  localStorage.setItem('myc_hist', JSON.stringify(history));
+}
+
+function renderHistory() {
+  const list = document.getElementById('histList');
+  if (!history.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:11px;padding:10px;font-family:var(--ui)">No history yet</div>';
+    return;
+  }
+  list.innerHTML = history.map((h, i) => `
+    <div class="h-item" onclick="loadHistory(${i})">
+      <div class="h-name">${esc(h.code.split('\n')[0].slice(0, 30))}…</div>
+      <div class="h-meta">${h.time} · ${h.success ? '✓ OK' : `✗ ${h.errors} error(s)`} · ${h.tokens} tok</div>
+    </div>`).join('');
+}
+
+window.loadHistory = function(i) {
+  const h = history[i];
+  if (!h) return;
+  editor.value = h.code;
+  updateLineNums(); updateSB();
+  document.getElementById('histDrawer').classList.remove('open');
+  showToast('Code loaded from history');
+};
+
+// ── Persist code ─────────────────────────────────────────
+function saveLocal() {
+  localStorage.setItem('myc_code', editor.value);
+}
+const saved = localStorage.getItem('myc_code');
+if (saved) { editor.value = saved; updateLineNums(); updateSB(); }
+
+// ── Utilities ────────────────────────────────────────────
+function dl(content, name, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name;
+  a.click();
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+// ── Resizer: vertical (editor | right) ───────────────────
+(function() {
+  const rv = document.getElementById('rv1');
+  const ep = document.getElementById('editorPanel');
+  let dragging = false, startX = 0, startW = 0;
+  rv.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = ep.offsetWidth;
+    rv.classList.add('drag'); document.body.style.cursor = 'col-resize'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const w = Math.max(220, Math.min(startW + e.clientX - startX, window.innerWidth - 280));
+    ep.style.flex = `0 0 ${w}px`;
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false; rv.classList.remove('drag'); document.body.style.cursor = '';
+  });
+})();
+
+// ── Resizer: horizontal (stdin | output) ─────────────────
+(function() {
+  const rh = document.getElementById('rh1');
+  const sp = document.getElementById('stdinPanel');
+  let dragging = false, startY = 0, startH = 0;
+  rh.addEventListener('mousedown', e => {
+    dragging = true; startY = e.clientY; startH = sp.offsetHeight;
+    rh.classList.add('drag'); document.body.style.cursor = 'row-resize'; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const h = Math.max(60, Math.min(startH + e.clientY - startY, 400));
+    sp.style.flex = `0 0 ${h}px`;
+  });
+  document.addEventListener('mouseup', () => {
+    dragging = false; rh.classList.remove('drag'); document.body.style.cursor = '';
+  });
+})();
+
+// ── Initial line count ────────────────────────────────────
+updateLineNums(); updateSB(); updateCursor();
+setStatus('idle', 'Ready — write code and press Run');
+</script>
+</body>
+</html>
