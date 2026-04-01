@@ -26,7 +26,7 @@ export default function App() {
       const ir = generateIR(code)
       const optimized = optimize(code)
       const target = generateCode(code)
-      const { treeString: parseTree } = generateParseTree(code)
+      const { treeString: parseTree, treeData } = generateParseTree(code)
 
       const result = {
         timestamp: new Date(),
@@ -34,6 +34,7 @@ export default function App() {
         tokens: tokens,
         parsed: parsed,
         parseTree: parseTree,
+        treeData: treeData,
         syntaxErrors: syntaxErrors,
         semantic: {
           errors: semanticResult.semanticErrors,

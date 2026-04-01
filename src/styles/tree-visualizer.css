@@ -1,0 +1,53 @@
+/* Tree Visualizer Styling */
+
+.tree-visualizer-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  overflow: auto;
+  max-height: 600px;
+}
+
+.tree-svg {
+  font-family: var(--font-mono);
+  background: var(--bg-2);
+  min-width: 100%;
+  height: auto;
+}
+
+.tree-edge {
+  stroke: var(--cyan);
+  stroke-width: 2;
+  fill: none;
+}
+
+.tree-node {
+  fill: var(--bg-1);
+  stroke: var(--cyan);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.1));
+}
+
+.tree-label {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--cyan);
+  font-family: var(--font-mono);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tree-visualizer-empty {
+  width: 100%;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-2);
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}

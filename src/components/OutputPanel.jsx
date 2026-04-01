@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { AlertCircle, CheckCircle, AlertTriangle, Zap, Code2, Target, Layers } from 'lucide-react'
+import TreeVisualizer from './TreeVisualizer'
 import '../styles/output.css'
+import '../styles/tree-visualizer.css'
 
 export default function OutputPanel({ result, isLoading }) {
   const [activeTab, setActiveTab] = useState('overview')
@@ -145,28 +147,59 @@ function OverviewTab({ result }) {
 }
 
 function LexerTab({ result }) {
+  // Count tokens by type
+  const tokenCounts = {};
+  result.tokens?.forEach(token => {
+    tokenCounts[token.type] = (tokenCounts[token.type] || 0) + 1;
+  });
+
+  const sortedTypes = Object.entries(tokenCounts).sort((a, b) => b[1] - a[1]);
+
   return (
     <div className="lexer-tab">
-      <table className="tokens-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Type</th>
-            <th>Value</th>
-            <th>Line</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.tokens?.map((token, i) => (
-            <tr key={i}>
-              <td>{i + 1}</td>
-              <td><span className={`token-type ${token.type}`}>{token.type}</span></td>
-              <td><code>{token.value}</code></td>
-              <td>{token.line}</td>
+      <div className="section">
+        <h4>📊 Token Summary</h4>
+        <table className="summary-table">
+          <thead>
+            <tr>
+              <th>Token Type</th>
+              <th>Count</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sortedTypes.map(([type, count]) => (
+              <tr key={type}>
+                <td><span className={`token-type ${type}`}>{type}</span></td>
+                <td className="count-cell">{count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="section">
+        <h4>📋 All Tokens</h4>
+        <table className="tokens-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Value</th>
+              <th>Line</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.tokens?.map((token, i) => (
+              <tr key={i}>
+                <td>{i + 1}</td>
+                <td><span className={`token-type ${token.type}`}>{token.type}</span></td>
+                <td><code>{token.value}</code></td>
+                <td>{token.line}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -195,9 +228,7 @@ function ParserTab({ result }) {
     <div className="parser-tab">
       <div className="section">
         <h4>📊 Parse Tree Diagram</h4>
-        <div className="tree-display">
-          <pre>{result.parseTree || 'No parse tree generated'}</pre>
-        </div>
+        <TreeVisualizer parseTree={result.parseTree} treeData={result.treeData} />
       </div>
       
       <div className="section">
@@ -207,12 +238,13 @@ function ParserTab({ result }) {
             if (p.type === 'DECL') {
               return `DECLARATION: ${p.value} (line ${p.line})`
             } else if (p.type === 'ENTER_SCOPE') {
-            return `{ (line ${p.line})`
-          } else if (p.type === 'EXIT_SCOPE') {
-            return `} (line ${p.line})`
-          }
-          return `${p.type} ${p.value || ''} (line ${p.line})`
-        }).join('\n') || 'No parsed data'}</pre>
+              return `{ (line ${p.line})`
+            } else if (p.type === 'EXIT_SCOPE') {
+              return `} (line ${p.line})`
+            }
+            return `${p.type} ${p.value || ''} (line ${p.line})`
+          }).join('\n') || 'No parsed data'}</pre>
+        </div>
       </div>
     </div>
   )
