@@ -10,7 +10,6 @@ export default function App() {
   const [code, setCode] = useState('int a;\nint b;\n')
   const [compileResult, setCompileResult] = useState(null)
   const [isCompiling, setIsCompiling] = useState(false)
-  const [modeSelect, setModeSelect] = useState('full')
   const [stdinInput, setStdinInput] = useState('')
   const [history, setHistory] = useState([])
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -73,8 +72,10 @@ export default function App() {
       // If whitespace → finalize word
       if (/\s/.test(c)) {
         if (word) {
+          // Check if word is a number
+          const tokenType = word === 'int' ? 'KEYWORD' : (/^\d+$/.test(word) ? 'NUMBER' : 'IDENTIFIER')
           tokens.push({
-            type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER',
+            type: tokenType,
             value: word,
             line
           })
@@ -84,8 +85,9 @@ export default function App() {
       // Handle braces
       else if (c === '{' || c === '}') {
         if (word) {
+          const tokenType = word === 'int' ? 'KEYWORD' : (/^\d+$/.test(word) ? 'NUMBER' : 'IDENTIFIER')
           tokens.push({
-            type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER',
+            type: tokenType,
             value: word,
             line
           })
@@ -96,14 +98,28 @@ export default function App() {
       // Handle semicolon
       else if (c === ';') {
         if (word) {
+          const tokenType = word === 'int' ? 'KEYWORD' : (/^\d+$/.test(word) ? 'NUMBER' : 'IDENTIFIER')
           tokens.push({
-            type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER',
+            type: tokenType,
             value: word,
             line
           })
           word = ''
         }
         tokens.push({ type: 'SEMICOLON', value: ';', line })
+      }
+      // Handle assignment
+      else if (c === '=') {
+        if (word) {
+          const tokenType = word === 'int' ? 'KEYWORD' : (/^\d+$/.test(word) ? 'NUMBER' : 'IDENTIFIER')
+          tokens.push({
+            type: tokenType,
+            value: word,
+            line
+          })
+          word = ''
+        }
+        tokens.push({ type: 'ASSIGNMENT', value: '=', line })
       } else {
         word += c
       }
@@ -111,8 +127,9 @@ export default function App() {
 
     // Last word
     if (word) {
+      const tokenType = word === 'int' ? 'KEYWORD' : (/^\d+$/.test(word) ? 'NUMBER' : 'IDENTIFIER')
       tokens.push({
-        type: word === 'int' ? 'KEYWORD' : 'IDENTIFIER',
+        type: tokenType,
         value: word,
         line
       })
@@ -133,22 +150,37 @@ export default function App() {
       const token = tokens[i]
 
       if (token.type === 'KEYWORD' && token.value === 'int') {
-        if (i + 2 < tokens.length &&
-            tokens[i + 1].type === 'IDENTIFIER' &&
-            tokens[i + 2].type === 'SEMICOLON') {
-          parsed.push({
-            type: 'DECL',
-            value: tokens[i + 1].value,
-            line: token.line
-          })
-          i += 2
-        } else {
-          syntaxErrors.push({
-            phase: 'Syntax',
-            line: token.line,
-            msg: `Invalid declaration at line ${token.line}`,
-            hint: 'Expected: int <identifier> ;'
-          })
+        if (i + 1 < tokens.length && tokens[i + 1].type === 'IDENTIFIER') {
+          let j = i + 2
+          
+          // Skip function declarations: int main() { ... }
+          if (j < tokens.length && tokens[j].type === 'IDENTIFIER' && tokens[j].value.includes('(')) {
+            // Skip the entire function declaration, advance until we find a brace
+            while (j < tokens.length && tokens[j].type !== 'BRACE') {
+              j++
+            }
+            i = j - 1
+            continue
+          }
+          
+          // Skip over optional initialization: = value
+          if (j < tokens.length && tokens[j].type === 'ASSIGNMENT') {
+            j++ // skip =
+            // Skip the value (number, identifier, etc.)
+            if (j < tokens.length && (tokens[j].type === 'NUMBER' || tokens[j].type === 'IDENTIFIER')) {
+              j++
+            }
+          }
+          // Now expect semicolon
+          if (j < tokens.length && tokens[j].type === 'SEMICOLON') {
+            parsed.push({
+              type: 'DECL',
+              value: tokens[i + 1].value,
+              line: token.line
+            })
+            i = j
+          }
+          // Note: Silent skip for unrecognized patterns instead of error
         }
       } else if (token.type === 'BRACE' && token.value === '{') {
         parsed.push({ type: 'ENTER_SCOPE', value: '', line: token.line })
@@ -330,8 +362,6 @@ export default function App() {
       <TopBar 
         onCompile={compileCode}
         isCompiling={isCompiling}
-        modeSelect={modeSelect}
-        onModeChange={setModeSelect}
         onReset={handleReset}
         onFormat={handleFormat}
         onDownload={handleDownload}

@@ -177,7 +177,7 @@ function LexerTab({ result }) {
         </table>
       </div>
 
-      <div className="section">
+      <div className="section" style={{ marginTop: '24px' }}>
         <h4>📋 All Tokens</h4>
         <table className="tokens-table">
           <thead>

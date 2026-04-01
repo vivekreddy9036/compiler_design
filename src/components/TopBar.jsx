@@ -5,8 +5,6 @@ import '../styles/topbar.css'
 export default function TopBar({ 
   onCompile, 
   isCompiling,
-  modeSelect,
-  onModeChange,
   onReset,
   onFormat,
   onDownload,
@@ -29,18 +27,6 @@ export default function TopBar({
           defaultValue="input.cpp"
           title="Filename"
         />
-        
-        <select 
-          value={modeSelect}
-          onChange={(e) => onModeChange(e.target.value)}
-          className="mode-select"
-          title="Compiler mode"
-        >
-          <option value="full">Full Pipeline</option>
-          <option value="lex">Lexical Only</option>
-          <option value="parse">Lex + Parse</option>
-          <option value="sem">Up to Semantic</option>
-        </select>
       </div>
       
       <div className="topbar-center">
